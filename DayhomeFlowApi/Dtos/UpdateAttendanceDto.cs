@@ -5,6 +5,9 @@ namespace DayhomeFlowApi.Dtos;
 public class UpdateAttendanceDto
 {
     [Required]
+    public int ChildId { get; set; }
+
+    [Required]
     public DateTime Date { get; set; }
 
     public bool WasPresent { get; set; } = true;

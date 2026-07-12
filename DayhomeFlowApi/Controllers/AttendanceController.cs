@@ -215,20 +215,37 @@ public class AttendanceController : ControllerBase
             return NotFound();
         }
 
+        var child = await _context.Children
+            .FirstOrDefaultAsync(c => c.Id == updateDto.ChildId && c.UserId == userId);
+
+        if (child == null)
+        {
+            return NotFound(new { message = "Child not found." });
+        }
+
+        if (!child.IsActive)
+        {
+            return BadRequest(new { message = "Cannot move attendance to an inactive child." });
+        }
+
         var dateOnly = updateDto.Date.Date;
 
         var duplicateExists = await _context.AttendanceRecords
             .AnyAsync(a =>
                 a.Id != id &&
                 a.UserId == userId &&
-                a.ChildId == record.ChildId &&
+                a.ChildId == updateDto.ChildId &&
                 a.Date.Date == dateOnly);
 
         if (duplicateExists)
         {
-            return BadRequest(new { message = "Another attendance record already exists for this child on this date." });
+            return BadRequest(new
+            {
+                message = "Another attendance record already exists for this child on this date."
+            });
         }
 
+        record.ChildId = updateDto.ChildId;
         record.Date = dateOnly;
         record.WasPresent = updateDto.WasPresent;
         record.DropOffTime = updateDto.DropOffTime;
