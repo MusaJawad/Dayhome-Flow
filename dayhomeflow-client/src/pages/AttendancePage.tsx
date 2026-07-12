@@ -37,8 +37,8 @@ function AttendancePage() {
   const [childId, setChildId] = useState<number>(0);
   const [date, setDate] = useState(getTodayDateInputValue());
   const [wasPresent, setWasPresent] = useState(true);
-  const [dropOffTime, setDropOffTime] = useState("08:30");
-  const [pickUpTime, setPickUpTime] = useState("16:30");
+  const [dropOffTime, setDropOffTime] = useState("");
+  const [pickUpTime, setPickUpTime] = useState("");
   const [notes, setNotes] = useState("");
 
   const [error, setError] = useState("");
@@ -76,8 +76,8 @@ function AttendancePage() {
     setChildId(children.length > 0 ? children[0].id : 0);
     setDate(getTodayDateInputValue());
     setWasPresent(true);
-    setDropOffTime("08:30");
-    setPickUpTime("16:30");
+    setDropOffTime("");
+    setPickUpTime("");
     setNotes("");
   }
 
@@ -86,8 +86,8 @@ function AttendancePage() {
     setChildId(record.childId);
     setDate(toDateInputValue(record.date));
     setWasPresent(record.wasPresent);
-    setDropOffTime(toTimeInputValue(record.dropOffTime) || "08:30");
-    setPickUpTime(toTimeInputValue(record.pickUpTime) || "16:30");
+    setDropOffTime(toTimeInputValue(record.dropOffTime));
+    setPickUpTime(toTimeInputValue(record.pickUpTime));
     setNotes(record.notes || "");
     setError("");
     setSuccess("");

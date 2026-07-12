@@ -4,16 +4,15 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../api/api";
 import type { AuthResponse } from "../types";
 
-
 function AuthPage() {
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("demo@dayhomeflow.com");
-  const [password, setPassword] = useState("password123");
-  const [businessName, setBusinessName] = useState("Demo Dayhome");
-  const [providerName, setProviderName] = useState("Demo Provider");
-  const [phone, setPhone] = useState("403-555-1234");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [providerName, setProviderName] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
 
   async function handleSubmit(event: React.FormEvent) {
@@ -53,6 +52,11 @@ function AuthPage() {
     }
   }
 
+  function switchMode() {
+    setMode(mode === "login" ? "register" : "login");
+    setError("");
+  }
+
   return (
     <main className="auth-page">
       <section className="auth-card">
@@ -75,6 +79,7 @@ function AuthPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               type="email"
+              placeholder="you@example.com"
               required
             />
           </label>
@@ -85,6 +90,8 @@ function AuthPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               type="password"
+              placeholder="Enter your password"
+              minLength={6}
               required
             />
           </label>
@@ -92,10 +99,11 @@ function AuthPage() {
           {mode === "register" && (
             <>
               <label>
-                Business name
+                Business / dayhome name
                 <input
                   value={businessName}
                   onChange={(event) => setBusinessName(event.target.value)}
+                  placeholder="Your dayhome name"
                   required
                 />
               </label>
@@ -105,13 +113,18 @@ function AuthPage() {
                 <input
                   value={providerName}
                   onChange={(event) => setProviderName(event.target.value)}
+                  placeholder="Your name"
                   required
                 />
               </label>
 
               <label>
                 Phone
-                <input value={phone} onChange={(event) => setPhone(event.target.value)} />
+                <input
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="Phone number"
+                />
               </label>
             </>
           )}
@@ -123,10 +136,7 @@ function AuthPage() {
           </button>
         </form>
 
-        <button
-          className="text-button"
-          onClick={() => setMode(mode === "login" ? "register" : "login")}
-        >
+        <button className="text-button" onClick={switchMode}>
           {mode === "login"
             ? "Need an account? Register"
             : "Already have an account? Log in"}

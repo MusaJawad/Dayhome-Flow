@@ -9,11 +9,11 @@ function DashboardPage() {
 
   const [editingChildId, setEditingChildId] = useState<number | null>(null);
 
-  const [firstName, setFirstName] = useState("Ayaan");
-  const [lastName, setLastName] = useState("Test");
-  const [parentName, setParentName] = useState("Parent Example");
-  const [parentEmail, setParentEmail] = useState("parent@example.com");
-  const [parentPhone, setParentPhone] = useState("403-555-1234");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [parentName, setParentName] = useState("");
+  const [parentEmail, setParentEmail] = useState("");
+  const [parentPhone, setParentPhone] = useState("");
   const [isActive, setIsActive] = useState(true);
 
   const [error, setError] = useState("");
@@ -182,6 +182,7 @@ function DashboardPage() {
               <input
                 value={firstName}
                 onChange={(event) => setFirstName(event.target.value)}
+                placeholder="Child first name"
                 required
               />
             </label>
@@ -191,6 +192,7 @@ function DashboardPage() {
               <input
                 value={lastName}
                 onChange={(event) => setLastName(event.target.value)}
+                placeholder="Child last name"
                 required
               />
             </label>
@@ -200,6 +202,7 @@ function DashboardPage() {
               <input
                 value={parentName}
                 onChange={(event) => setParentName(event.target.value)}
+                placeholder="Parent or Guardian name"
               />
             </label>
 
@@ -209,6 +212,7 @@ function DashboardPage() {
                 value={parentEmail}
                 onChange={(event) => setParentEmail(event.target.value)}
                 type="email"
+                placeholder="parent@example.com"
               />
             </label>
 
@@ -217,6 +221,7 @@ function DashboardPage() {
               <input
                 value={parentPhone}
                 onChange={(event) => setParentPhone(event.target.value)}
+                placeholder="Parent phone number"
               />
             </label>
 
