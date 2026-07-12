@@ -1,7 +1,8 @@
-# Node / React
-dayhomeflow-client/node_modules/
-dayhomeflow-client/dist/
+# Frontend environment files
 dayhomeflow-client/.env
+dayhomeflow-client/.env.local
+dayhomeflow-client/.env.production
+dayhomeflow-client/.env.production.local
 
 # .NET
 DayhomeFlowApi/bin/
