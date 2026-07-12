@@ -46,3 +46,11 @@ export type InvoicePreview = {
   daysInMonth: number;
   children: InvoiceChildLine[];
 };
+
+export type ProviderProfile = {
+  id: number;
+  businessName: string;
+  providerName: string;
+  email?: string | null;
+  phone?: string | null;
+};

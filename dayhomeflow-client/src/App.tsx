@@ -1,8 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import AuthPage from "./pages/Authpage.tsx";
+import AuthPage from "./pages/AuthPage.tsx";
 import DashboardPage from "./pages/DashboardPage";
 import AttendancePage from "./pages/AttendancePage";
 import InvoicePage from "./pages/InvoicePage.tsx";
+import ProviderSettingsPage from "./pages/ProviderSettingsPage";
 import "./App.css";
 
 function App() {
@@ -35,6 +36,12 @@ function App() {
           path="/invoices"
           element={isLoggedIn ? <InvoicePage /> : <Navigate to="/auth" />}
         />
+
+        <Route
+          path="/settings"
+          element={isLoggedIn ? <ProviderSettingsPage /> : <Navigate to="/auth" />}
+        />
+
       </Routes>
     </BrowserRouter>
   );

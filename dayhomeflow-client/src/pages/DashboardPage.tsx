@@ -87,6 +87,10 @@ function DashboardPage() {
                     Invoices
                 </Link>
 
+                <Link className="link-button" to="/settings">
+                    Settings
+                </Link>
+
                 <button className="secondary-button" onClick={logout}>
                     Logout
                 </button>
