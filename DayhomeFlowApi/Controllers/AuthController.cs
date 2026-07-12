@@ -7,7 +7,7 @@ using DayhomeFlowApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
+using Microsoft.AspNetCore.RateLimiting;
 namespace DayhomeFlowApi.Controllers;
 
 [ApiController]
@@ -23,6 +23,8 @@ public class AuthController : ControllerBase
         _configuration = configuration;
     }
 
+
+    [EnableRateLimiting("auth")]
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register(RegisterUserDto registerDto)
     {
@@ -66,6 +68,7 @@ public class AuthController : ControllerBase
         });
     }
 
+    [EnableRateLimiting("auth")]
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginUserDto loginDto)
     {

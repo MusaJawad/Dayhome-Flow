@@ -57,6 +57,28 @@ public class InvoicesController : ControllerBase
         return RoundToNearestQuarter((decimal)duration.TotalHours);
     }
 
+    private static string SanitizeExcelText(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = value.Trim();
+
+        if (
+            trimmed.StartsWith("=") ||
+            trimmed.StartsWith("+") ||
+            trimmed.StartsWith("-") ||
+            trimmed.StartsWith("@")
+        )
+        {
+            return "'" + trimmed;
+        }
+
+        return trimmed;
+    }
+
     private async Task<InvoicePreviewDto> BuildInvoicePreview(int userId, int year, int month)
     {
         var daysInMonth = DateTime.DaysInMonth(year, month);
@@ -204,10 +226,10 @@ public class InvoicesController : ControllerBase
         var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month);
 
         // Top invoice info
-        worksheet.Cell("N1").Value = providerProfile?.ProviderName ?? "";
+        worksheet.Cell("N1").Value = SanitizeExcelText(providerProfile?.ProviderName);
         worksheet.Cell("N2").Value = monthName;
         worksheet.Cell("U2").Value = year;
-        worksheet.Cell("N3").Value = providerProfile?.Phone ?? "";
+        worksheet.Cell("N3").Value = SanitizeExcelText(providerProfile?.Phone);
 
         ClearMainInvoiceRows(worksheet);
         ClearParentNameRows(worksheet);
@@ -220,7 +242,7 @@ public class InvoicesController : ControllerBase
             var child = preview.Children[i];
 
             // Child name column
-            worksheet.Cell(row, 1).Value = child.ChildName;
+            worksheet.Cell(row, 1).Value = SanitizeExcelText(child.ChildName);
 
             // Day columns: day 1 starts at column C, so day + 2
             for (int day = 1; day <= 31; day++)
@@ -256,7 +278,7 @@ public class InvoicesController : ControllerBase
 
         for (int i = 0; i < uniqueParentNames.Count; i++)
         {
-            worksheet.Cell(34 + i, 1).Value = uniqueParentNames[i];
+            worksheet.Cell(34 + i, 1).Value = SanitizeExcelText(uniqueParentNames[i]);
         }
 
         // Money/agency fields are intentionally left blank.
