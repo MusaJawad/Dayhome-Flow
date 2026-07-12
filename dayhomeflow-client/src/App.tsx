@@ -1,8 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import AuthPage from "./pages/AuthPage.tsx";
+import LandingPage from "./pages/LandingPage";
+import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import AttendancePage from "./pages/AttendancePage";
-import InvoicePage from "./pages/InvoicePage.tsx";
+import InvoicePage from "./pages/InvoicePage";
 import ProviderSettingsPage from "./pages/ProviderSettingsPage";
 import "./App.css";
 
@@ -12,10 +13,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route
-          path="/"
-          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Navigate to="/auth" />}
-        />
+        <Route path="/" element={<LandingPage />} />
 
         <Route
           path="/auth"
@@ -41,7 +39,6 @@ function App() {
           path="/settings"
           element={isLoggedIn ? <ProviderSettingsPage /> : <Navigate to="/auth" />}
         />
-
       </Routes>
     </BrowserRouter>
   );

@@ -1,8 +1,9 @@
 import axios from "axios";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api/api";
 import type { AuthResponse } from "../types";
+
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -56,6 +57,10 @@ function AuthPage() {
     <main className="auth-page">
       <section className="auth-card">
         <p className="eyebrow">DayhomeFlow</p>
+
+        <Link className="back-home-link" to="/">
+          ← Back to home
+        </Link>
 
         <h1>{mode === "login" ? "Welcome back" : "Create your account"}</h1>
 
