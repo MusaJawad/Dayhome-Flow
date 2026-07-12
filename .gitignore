@@ -1,0 +1,21 @@
+# Node / React
+dayhomeflow-client/node_modules/
+dayhomeflow-client/dist/
+dayhomeflow-client/.env
+
+# .NET
+DayhomeFlowApi/bin/
+DayhomeFlowApi/obj/
+
+# Local databases
+DayhomeFlowApi/*.db
+DayhomeFlowApi/*.db-shm
+DayhomeFlowApi/*.db-wal
+
+# User/local settings
+DayhomeFlowApi/appsettings.Development.json
+
+# OS/editor
+.vscode/
+.DS_Store
+Thumbs.db
