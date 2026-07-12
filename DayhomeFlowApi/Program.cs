@@ -28,8 +28,19 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddDbContext<DayhomeFlowContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+var databaseProvider = builder.Configuration["DatabaseProvider"] ?? "Sqlite";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (string.Equals(databaseProvider, "Postgres", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddDbContext<DayhomeFlowContext>(options =>
+        options.UseNpgsql(connectionString));
+}
+else
+{
+    builder.Services.AddDbContext<DayhomeFlowContext>(options =>
+        options.UseSqlite(connectionString));
+}
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
@@ -103,6 +114,13 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<DayhomeFlowContext>();
+    dbContext.Database.Migrate();
+}
+
 
 app.UseSwagger();
 app.UseSwaggerUI();
