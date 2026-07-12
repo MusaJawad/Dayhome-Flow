@@ -38,7 +38,6 @@ export type InvoiceChildLine = {
   parentName?: string | null;
   days: InvoiceDay[];
   totalHours: number;
-  contractFee: number;
 };
 
 export type InvoicePreview = {
@@ -46,12 +45,4 @@ export type InvoicePreview = {
   year: number;
   daysInMonth: number;
   children: InvoiceChildLine[];
-  subTotal: number;
-  agencyFees: number;
-  liabilityInsurance: number;
-  storyparkDeduction: number;
-  trainingCourses: number;
-  deductions: number;
-  additions: number;
-  totalPaid: number;
 };

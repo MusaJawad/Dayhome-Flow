@@ -123,36 +123,22 @@ public class InvoicesController : ControllerBase
                 });
             }
 
-            var presentDays = childRecords.Count(a => a.WasPresent);
-            var contractFee = presentDays * child.DailyRate;
-
             invoiceLines.Add(new InvoiceChildLineDto
             {
                 ChildId = child.Id,
                 ChildName = $"{child.FirstName} {child.LastName}",
                 ParentName = child.ParentName,
                 Days = dayDtos,
-                TotalHours = totalHours,
-                ContractFee = contractFee
+                TotalHours = totalHours
             });
         }
-
-        var subTotal = invoiceLines.Sum(line => line.ContractFee);
 
         return new InvoicePreviewDto
         {
             Month = month,
             Year = year,
             DaysInMonth = daysInMonth,
-            Children = invoiceLines,
-            SubTotal = subTotal,
-            AgencyFees = 0,
-            LiabilityInsurance = 0,
-            StoryparkDeduction = 0,
-            TrainingCourses = 0,
-            Deductions = 0,
-            Additions = 0,
-            TotalPaid = subTotal
+            Children = invoiceLines
         };
     }
 
@@ -251,9 +237,11 @@ public class InvoicesController : ControllerBase
                 SetDayCellValue(cell, dayValue);
             }
 
-            // Total Hours and Contract Fee
+            // Total Hours column
             worksheet.Cell(row, 34).Value = child.TotalHours;
-            worksheet.Cell(row, 35).Value = child.ContractFee;
+
+            // Contract Fee column is intentionally left blank.
+            worksheet.Cell(row, 35).Clear(XLClearOptions.Contents);
         }
 
         // Parent names section.
@@ -271,15 +259,15 @@ public class InvoicesController : ControllerBase
             worksheet.Cell(34 + i, 1).Value = uniqueParentNames[i];
         }
 
-        // Summary cells
-        worksheet.Cell("AI33").Value = preview.SubTotal;
-        worksheet.Cell("AI34").Value = preview.AgencyFees;
-        worksheet.Cell("AI35").Value = preview.LiabilityInsurance;
-        worksheet.Cell("AI36").Value = preview.StoryparkDeduction;
-        worksheet.Cell("AI37").Value = preview.TrainingCourses;
-        worksheet.Cell("AI42").Value = preview.Deductions;
-        worksheet.Cell("AI43").Value = preview.Additions;
-        worksheet.Cell("AI46").Value = preview.TotalPaid;
+        // Money/agency fields are intentionally left blank.
+        worksheet.Cell("AI33").Clear(XLClearOptions.Contents);
+        worksheet.Cell("AI34").Clear(XLClearOptions.Contents);
+        worksheet.Cell("AI35").Clear(XLClearOptions.Contents);
+        worksheet.Cell("AI36").Clear(XLClearOptions.Contents);
+        worksheet.Cell("AI37").Clear(XLClearOptions.Contents);
+        worksheet.Cell("AI42").Clear(XLClearOptions.Contents);
+        worksheet.Cell("AI43").Clear(XLClearOptions.Contents);
+        worksheet.Cell("AI46").Clear(XLClearOptions.Contents);
 
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);

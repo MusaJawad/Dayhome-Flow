@@ -64,12 +64,8 @@ function InvoicePage() {
       link.remove();
 
       window.URL.revokeObjectURL(url);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError("Failed to export Excel file.");
-      } else {
-        setError("Failed to export Excel file.");
-      }
+    } catch {
+      setError("Failed to export Excel file.");
     }
   }
 
@@ -84,7 +80,7 @@ function InvoicePage() {
           <p className="eyebrow">DayhomeFlow</p>
           <h1>Invoice Preview</h1>
           <p className="muted">
-            Generate a monthly invoice grid based on attendance records.
+            Generate a monthly attendance and hours invoice from saved records.
           </p>
         </div>
 
@@ -154,11 +150,6 @@ function InvoicePage() {
                 x = no record, a = absent, 0 = present without times
               </p>
             </div>
-
-            <div className="invoice-total-box">
-              <span>Total paid</span>
-              <strong>${preview.totalPaid.toFixed(2)}</strong>
-            </div>
           </div>
 
           <div className="invoice-table-wrapper">
@@ -172,14 +163,13 @@ function InvoicePage() {
                   ))}
 
                   <th>Total Hours</th>
-                  <th>Contract Fee</th>
                 </tr>
               </thead>
 
               <tbody>
                 {preview.children.length === 0 ? (
                   <tr>
-                    <td colSpan={preview.daysInMonth + 3}>
+                    <td colSpan={preview.daysInMonth + 2}>
                       No active children found.
                     </td>
                   </tr>
@@ -206,56 +196,11 @@ function InvoicePage() {
                       ))}
 
                       <td className="strong-cell">{child.totalHours}</td>
-                      <td className="strong-cell">
-                        ${child.contractFee.toFixed(2)}
-                      </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
-          </div>
-
-          <div className="invoice-summary">
-            <div>
-              <span>Subtotal</span>
-              <strong>${preview.subTotal.toFixed(2)}</strong>
-            </div>
-
-            <div>
-              <span>Agency fees</span>
-              <strong>${preview.agencyFees.toFixed(2)}</strong>
-            </div>
-
-            <div>
-              <span>Liability insurance</span>
-              <strong>${preview.liabilityInsurance.toFixed(2)}</strong>
-            </div>
-
-            <div>
-              <span>Storypark deduction</span>
-              <strong>${preview.storyparkDeduction.toFixed(2)}</strong>
-            </div>
-
-            <div>
-              <span>Training courses</span>
-              <strong>${preview.trainingCourses.toFixed(2)}</strong>
-            </div>
-
-            <div>
-              <span>Deductions</span>
-              <strong>${preview.deductions.toFixed(2)}</strong>
-            </div>
-
-            <div>
-              <span>Additions</span>
-              <strong>${preview.additions.toFixed(2)}</strong>
-            </div>
-
-            <div className="grand-total">
-              <span>Total paid</span>
-              <strong>${preview.totalPaid.toFixed(2)}</strong>
-            </div>
           </div>
         </section>
       )}

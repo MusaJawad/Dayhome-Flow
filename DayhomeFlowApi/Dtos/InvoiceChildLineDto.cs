@@ -7,5 +7,4 @@ public class InvoiceChildLineDto
     public string? ParentName { get; set; }
     public List<InvoiceDayDto> Days { get; set; } = new();
     public decimal TotalHours { get; set; }
-    public decimal ContractFee { get; set; }
 }
