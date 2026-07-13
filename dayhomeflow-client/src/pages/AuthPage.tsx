@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { SyntheticEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import api from "../api/api";
 
 type AuthMode = "login" | "register";
@@ -11,8 +11,6 @@ type AuthResponse = {
 };
 
 function AuthPage() {
-  const navigate = useNavigate();
-
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,14 +19,6 @@ function AuthPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const isLogin = mode === "login";
-
-  useEffect(() => {
-    const existingToken = localStorage.getItem("dayhomeflow_token");
-
-    if (existingToken) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [navigate]);
 
   const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -53,7 +43,7 @@ function AuthPage() {
       localStorage.setItem("dayhomeflow_token", response.data.token);
       localStorage.setItem("dayhomeflow_email", response.data.email);
 
-      navigate("/dashboard", { replace: true });
+      window.location.href = "/dashboard";
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
