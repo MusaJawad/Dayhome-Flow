@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5192/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5192/api"
 });
 
 api.interceptors.request.use((config) => {
@@ -21,8 +21,8 @@ api.interceptors.response.use(
       localStorage.removeItem("dayhomeflow_token");
       localStorage.removeItem("dayhomeflow_email");
 
-      if (window.location.pathname !== "/auth") {
-        window.location.href = "/auth";
+      if (window.location.hash !== "#/auth") {
+        window.location.assign("/#/auth");
       }
     }
 
