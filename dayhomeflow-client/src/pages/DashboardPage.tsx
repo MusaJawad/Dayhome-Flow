@@ -1,7 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import api from "../api/api";
+import { Link, useNavigate } from "react-router-dom";import api from "../api/api";
 import type { Child } from "../types";
 
 function DashboardPage() {
@@ -139,7 +138,7 @@ function DashboardPage() {
   function logout() {
     localStorage.removeItem("dayhomeflow_token");
     localStorage.removeItem("dayhomeflow_email");
-    window.location.href = "/auth";
+    window.location.assign("/#/auth");
   }
 
   return (
