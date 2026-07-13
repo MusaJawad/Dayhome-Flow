@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactElement } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
@@ -6,9 +6,10 @@ import DashboardPage from "./pages/DashboardPage";
 import AttendancePage from "./pages/AttendancePage";
 import InvoicePage from "./pages/InvoicePage";
 import ProviderSettingsPage from "./pages/ProviderSettingsPage";
+import "./App.css";
 
 type ProtectedRouteProps = {
-  children: ReactNode;
+  children: ReactElement;
 };
 
 function ProtectedRoute({ children }: ProtectedRouteProps) {
