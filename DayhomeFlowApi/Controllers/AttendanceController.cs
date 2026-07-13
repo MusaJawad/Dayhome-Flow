@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DayhomeFlowApi.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AttendanceController : ControllerBase
 {
     private readonly DayhomeFlowContext _context;
@@ -20,16 +20,236 @@ public class AttendanceController : ControllerBase
         _context = context;
     }
 
-    private int GetCurrentUserId()
+    [HttpGet]
+    public async Task<ActionResult<List<AttendanceResponseDto>>> GetAll()
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = GetUserId();
 
-        if (string.IsNullOrWhiteSpace(userIdClaim))
+        var records = await _context.AttendanceRecords
+            .Include(a => a.Child)
+            .Where(a => a.UserId == userId)
+            .OrderByDescending(a => a.Date)
+            .ThenBy(a => a.Child!.FirstName)
+            .ThenBy(a => a.Child!.LastName)
+            .Select(a => ToResponseDto(a))
+            .ToListAsync();
+
+        return Ok(records);
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<AttendanceResponseDto>> GetById(int id)
+    {
+        var userId = GetUserId();
+
+        var record = await _context.AttendanceRecords
+            .Include(a => a.Child)
+            .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
+
+        if (record == null)
+        {
+            return NotFound("Attendance record not found.");
+        }
+
+        return Ok(ToResponseDto(record));
+    }
+
+    [HttpGet("child/{childId:int}")]
+    public async Task<ActionResult<List<AttendanceResponseDto>>> GetByChild(int childId)
+    {
+        var userId = GetUserId();
+
+        var childExists = await _context.Children
+            .AnyAsync(c => c.Id == childId && c.UserId == userId);
+
+        if (!childExists)
+        {
+            return NotFound("Child not found.");
+        }
+
+        var records = await _context.AttendanceRecords
+            .Include(a => a.Child)
+            .Where(a => a.UserId == userId && a.ChildId == childId)
+            .OrderByDescending(a => a.Date)
+            .Select(a => ToResponseDto(a))
+            .ToListAsync();
+
+        return Ok(records);
+    }
+
+    [HttpGet("monthly")]
+    public async Task<ActionResult<List<AttendanceResponseDto>>> GetMonthly(
+        [FromQuery] int year,
+        [FromQuery] int month)
+    {
+        return await GetMonthlyRecords(year, month);
+    }
+
+    [HttpGet("monthly/{year:int}/{month:int}")]
+    public async Task<ActionResult<List<AttendanceResponseDto>>> GetMonthlyByRoute(
+        int year,
+        int month)
+    {
+        return await GetMonthlyRecords(year, month);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<AttendanceResponseDto>> Create(CreateAttendanceDto dto)
+    {
+        var userId = GetUserId();
+        var attendanceDate = AsUtcDate(dto.Date);
+
+        var child = await _context.Children
+            .FirstOrDefaultAsync(c => c.Id == dto.ChildId && c.UserId == userId);
+
+        if (child == null)
+        {
+            return NotFound("Child not found.");
+        }
+
+        var duplicateExists = await _context.AttendanceRecords.AnyAsync(a =>
+            a.UserId == userId &&
+            a.ChildId == dto.ChildId &&
+            a.Date == attendanceDate);
+
+        if (duplicateExists)
+        {
+            return BadRequest("Attendance has already been recorded for this child on this date.");
+        }
+
+        var record = new AttendanceRecord
+        {
+            UserId = userId,
+            ChildId = dto.ChildId,
+            Date = attendanceDate,
+            WasPresent = dto.WasPresent,
+            DropOffTime = dto.DropOffTime,
+            PickUpTime = dto.PickUpTime,
+            Notes = dto.Notes
+        };
+
+        _context.AttendanceRecords.Add(record);
+        await _context.SaveChangesAsync();
+
+        record.Child = child;
+
+        return CreatedAtAction(nameof(GetById), new { id = record.Id }, ToResponseDto(record));
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<AttendanceResponseDto>> Update(int id, UpdateAttendanceDto dto)
+    {
+        var userId = GetUserId();
+        var attendanceDate = AsUtcDate(dto.Date);
+
+        var record = await _context.AttendanceRecords
+            .Include(a => a.Child)
+            .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
+
+        if (record == null)
+        {
+            return NotFound("Attendance record not found.");
+        }
+
+        var child = await _context.Children
+            .FirstOrDefaultAsync(c => c.Id == dto.ChildId && c.UserId == userId);
+
+        if (child == null)
+        {
+            return NotFound("Child not found.");
+        }
+
+        var duplicateExists = await _context.AttendanceRecords.AnyAsync(a =>
+            a.Id != id &&
+            a.UserId == userId &&
+            a.ChildId == dto.ChildId &&
+            a.Date == attendanceDate);
+
+        if (duplicateExists)
+        {
+            return BadRequest("Attendance has already been recorded for this child on this date.");
+        }
+
+        record.ChildId = dto.ChildId;
+        record.Date = attendanceDate;
+        record.WasPresent = dto.WasPresent;
+        record.DropOffTime = dto.DropOffTime;
+        record.PickUpTime = dto.PickUpTime;
+        record.Notes = dto.Notes;
+
+        await _context.SaveChangesAsync();
+
+        record.Child = child;
+
+        return Ok(ToResponseDto(record));
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var userId = GetUserId();
+
+        var record = await _context.AttendanceRecords
+            .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
+
+        if (record == null)
+        {
+            return NotFound("Attendance record not found.");
+        }
+
+        _context.AttendanceRecords.Remove(record);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    private async Task<ActionResult<List<AttendanceResponseDto>>> GetMonthlyRecords(int year, int month)
+    {
+        if (month < 1 || month > 12)
+        {
+            return BadRequest("Month must be between 1 and 12.");
+        }
+
+        if (year < 2000 || year > 2100)
+        {
+            return BadRequest("Year is invalid.");
+        }
+
+        var userId = GetUserId();
+
+        var startDate = DateTime.SpecifyKind(new DateTime(year, month, 1), DateTimeKind.Utc);
+        var endDate = startDate.AddMonths(1);
+
+        var records = await _context.AttendanceRecords
+            .Include(a => a.Child)
+            .Where(a =>
+                a.UserId == userId &&
+                a.Date >= startDate &&
+                a.Date < endDate)
+            .OrderBy(a => a.Date)
+            .ThenBy(a => a.Child!.FirstName)
+            .ThenBy(a => a.Child!.LastName)
+            .Select(a => ToResponseDto(a))
+            .ToListAsync();
+
+        return Ok(records);
+    }
+
+    private int GetUserId()
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdValue))
         {
             throw new UnauthorizedAccessException("User ID claim is missing.");
         }
 
-        return int.Parse(userIdClaim);
+        return int.Parse(userIdValue);
+    }
+
+    private static DateTime AsUtcDate(DateTime date)
+    {
+        return DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
     }
 
     private static AttendanceResponseDto ToResponseDto(AttendanceRecord record)
@@ -40,239 +260,12 @@ public class AttendanceController : ControllerBase
             ChildId = record.ChildId,
             ChildName = record.Child == null
                 ? string.Empty
-                : $"{record.Child.FirstName} {record.Child.LastName}",
+                : $"{record.Child.FirstName} {record.Child.LastName}".Trim(),
             Date = record.Date,
             WasPresent = record.WasPresent,
             DropOffTime = record.DropOffTime,
             PickUpTime = record.PickUpTime,
             Notes = record.Notes
         };
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<List<AttendanceResponseDto>>> GetAll()
-    {
-        var userId = GetCurrentUserId();
-
-        var records = await _context.AttendanceRecords
-            .Include(a => a.Child)
-            .Where(a => a.UserId == userId)
-            .OrderByDescending(a => a.Date)
-            .ToListAsync();
-
-        var response = records.Select(ToResponseDto).ToList();
-
-        return Ok(response);
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<AttendanceResponseDto>> GetById(int id)
-    {
-        var userId = GetCurrentUserId();
-
-        var record = await _context.AttendanceRecords
-            .Include(a => a.Child)
-            .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
-
-        if (record == null)
-        {
-            return NotFound();
-        }
-
-        return Ok(ToResponseDto(record));
-    }
-
-    [HttpGet("child/{childId}")]
-    public async Task<ActionResult<List<AttendanceResponseDto>>> GetByChild(int childId)
-    {
-        var userId = GetCurrentUserId();
-
-        var childExists = await _context.Children
-            .AnyAsync(c => c.Id == childId && c.UserId == userId);
-
-        if (!childExists)
-        {
-            return NotFound(new { message = "Child not found." });
-        }
-
-        var records = await _context.AttendanceRecords
-            .Include(a => a.Child)
-            .Where(a => a.UserId == userId && a.ChildId == childId)
-            .OrderByDescending(a => a.Date)
-            .ToListAsync();
-
-        var response = records.Select(ToResponseDto).ToList();
-
-        return Ok(response);
-    }
-
-    [HttpGet("monthly")]
-    public async Task<ActionResult<List<AttendanceResponseDto>>> GetMonthly(
-        [FromQuery] int year,
-        [FromQuery] int month,
-        [FromQuery] int? childId)
-    {
-        var userId = GetCurrentUserId();
-
-        if (month < 1 || month > 12)
-        {
-            return BadRequest(new { message = "Month must be between 1 and 12." });
-        }
-
-        var query = _context.AttendanceRecords
-            .Include(a => a.Child)
-            .Where(a =>
-                a.UserId == userId &&
-                a.Date.Year == year &&
-                a.Date.Month == month);
-
-        if (childId.HasValue)
-        {
-            var childExists = await _context.Children
-                .AnyAsync(c => c.Id == childId.Value && c.UserId == userId);
-
-            if (!childExists)
-            {
-                return NotFound(new { message = "Child not found." });
-            }
-
-            query = query.Where(a => a.ChildId == childId.Value);
-        }
-
-        var records = await query
-            .OrderBy(a => a.Date)
-            .ToListAsync();
-
-        var response = records.Select(ToResponseDto).ToList();
-
-        return Ok(response);
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<AttendanceResponseDto>> Create(CreateAttendanceDto createDto)
-    {
-        var userId = GetCurrentUserId();
-
-        var child = await _context.Children
-            .FirstOrDefaultAsync(c => c.Id == createDto.ChildId && c.UserId == userId);
-
-        if (child == null)
-        {
-            return NotFound(new { message = "Child not found." });
-        }
-
-        if (!child.IsActive)
-        {
-            return BadRequest(new { message = "Cannot add attendance for an inactive child." });
-        }
-
-        var dateOnly = createDto.Date.Date;
-
-        var duplicateExists = await _context.AttendanceRecords
-            .AnyAsync(a =>
-                a.UserId == userId &&
-                a.ChildId == createDto.ChildId &&
-                a.Date.Date == dateOnly);
-
-        if (duplicateExists)
-        {
-            return BadRequest(new { message = "Attendance record already exists for this child on this date." });
-        }
-
-        var record = new AttendanceRecord
-        {
-            UserId = userId,
-            ChildId = createDto.ChildId,
-            Date = dateOnly,
-            WasPresent = createDto.WasPresent,
-            DropOffTime = createDto.DropOffTime,
-            PickUpTime = createDto.PickUpTime,
-            Notes = createDto.Notes
-        };
-
-        _context.AttendanceRecords.Add(record);
-        await _context.SaveChangesAsync();
-
-        record.Child = child;
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = record.Id },
-            ToResponseDto(record)
-        );
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, UpdateAttendanceDto updateDto)
-    {
-        var userId = GetCurrentUserId();
-
-        var record = await _context.AttendanceRecords
-            .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
-
-        if (record == null)
-        {
-            return NotFound();
-        }
-
-        var child = await _context.Children
-            .FirstOrDefaultAsync(c => c.Id == updateDto.ChildId && c.UserId == userId);
-
-        if (child == null)
-        {
-            return NotFound(new { message = "Child not found." });
-        }
-
-        if (!child.IsActive)
-        {
-            return BadRequest(new { message = "Cannot move attendance to an inactive child." });
-        }
-
-        var dateOnly = updateDto.Date.Date;
-
-        var duplicateExists = await _context.AttendanceRecords
-            .AnyAsync(a =>
-                a.Id != id &&
-                a.UserId == userId &&
-                a.ChildId == updateDto.ChildId &&
-                a.Date.Date == dateOnly);
-
-        if (duplicateExists)
-        {
-            return BadRequest(new
-            {
-                message = "Another attendance record already exists for this child on this date."
-            });
-        }
-
-        record.ChildId = updateDto.ChildId;
-        record.Date = dateOnly;
-        record.WasPresent = updateDto.WasPresent;
-        record.DropOffTime = updateDto.DropOffTime;
-        record.PickUpTime = updateDto.PickUpTime;
-        record.Notes = updateDto.Notes;
-
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var userId = GetCurrentUserId();
-
-        var record = await _context.AttendanceRecords
-            .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
-
-        if (record == null)
-        {
-            return NotFound();
-        }
-
-        _context.AttendanceRecords.Remove(record);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
     }
 }
