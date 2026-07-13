@@ -1,46 +1,72 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import type { ReactNode } from "react";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import AttendancePage from "./pages/AttendancePage";
 import InvoicePage from "./pages/InvoicePage";
 import ProviderSettingsPage from "./pages/ProviderSettingsPage";
-import "./App.css";
+
+type ProtectedRouteProps = {
+  children: ReactNode;
+};
+
+function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const token = localStorage.getItem("dayhomeflow_token");
+
+  if (!token) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return children;
+}
 
 function App() {
-  const isLoggedIn = !!localStorage.getItem("dayhomeflow_token");
-
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-
-        <Route
-          path="/auth"
-          element={isLoggedIn ? <Navigate to="/dashboard" /> : <AuthPage />}
-        />
+        <Route path="/auth" element={<AuthPage />} />
 
         <Route
           path="/dashboard"
-          element={isLoggedIn ? <DashboardPage /> : <Navigate to="/auth" />}
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
         />
 
         <Route
           path="/attendance"
-          element={isLoggedIn ? <AttendancePage /> : <Navigate to="/auth" />}
+          element={
+            <ProtectedRoute>
+              <AttendancePage />
+            </ProtectedRoute>
+          }
         />
 
         <Route
           path="/invoices"
-          element={isLoggedIn ? <InvoicePage /> : <Navigate to="/auth" />}
+          element={
+            <ProtectedRoute>
+              <InvoicePage />
+            </ProtectedRoute>
+          }
         />
 
         <Route
           path="/settings"
-          element={isLoggedIn ? <ProviderSettingsPage /> : <Navigate to="/auth" />}
+          element={
+            <ProtectedRoute>
+              <ProviderSettingsPage />
+            </ProtectedRoute>
+          }
         />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
