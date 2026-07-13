@@ -240,9 +240,13 @@ function DashboardPage() {
     <main className="app-page">
       <header className="app-header">
         <div>
-          <Link to="/" className="back-link">
+          <button
+            type="button"
+            className="back-link back-link-button"
+            onClick={() => window.location.assign("/#/")}
+          >
             ← Home
-          </Link>
+          </button>
 
           <h1>DayhomeFlow Dashboard</h1>
           <p>Manage children, parent details, attendance, and invoice exports.</p>
