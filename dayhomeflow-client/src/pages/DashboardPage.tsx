@@ -1,123 +1,170 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";import api from "../api/api";
-import type { Child } from "../types";
+import type { SyntheticEvent } from "react";
+import { Link } from "react-router-dom";
+import api from "../api/api";
+
+type Child = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  parentName?: string | null;
+  parentEmail?: string | null;
+  parentPhone?: string | null;
+  dailyRate?: number;
+  isActive: boolean;
+};
+
+type ChildFormState = {
+  firstName: string;
+  lastName: string;
+  parentName: string;
+  parentEmail: string;
+  parentPhone: string;
+};
+
+const emptyForm: ChildFormState = {
+  firstName: "",
+  lastName: "",
+  parentName: "",
+  parentEmail: "",
+  parentPhone: ""
+};
 
 function DashboardPage() {
   const [children, setChildren] = useState<Child[]>([]);
-
+  const [form, setForm] = useState<ChildFormState>(emptyForm);
   const [editingChildId, setEditingChildId] = useState<number | null>(null);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [parentName, setParentName] = useState("");
-  const [parentEmail, setParentEmail] = useState("");
-  const [parentPhone, setParentPhone] = useState("");
-  const [isActive, setIsActive] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  async function loadChildren() {
-    try {
-      const response = await api.get<Child[]>("/Children");
-      setChildren(response.data);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || "Failed to load children.");
-      } else {
-        setError("Failed to load children.");
-      }
-    }
-  }
+  const activeChildren = children.filter((child) => child.isActive);
+  const inactiveChildren = children.filter((child) => !child.isActive);
 
   useEffect(() => {
     loadChildren();
   }, []);
 
-  function resetForm() {
+  const loadChildren = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      const response = await api.get<Child[]>("/Children");
+      setChildren(response.data);
+    } catch {
+      setErrorMessage("Could not load children. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof ChildFormState, value: string) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      [field]: value
+    }));
+  };
+
+  const resetForm = () => {
+    setForm(emptyForm);
     setEditingChildId(null);
-    setFirstName("");
-    setLastName("");
-    setParentName("");
-    setParentEmail("");
-    setParentPhone("");
-    setIsActive(true);
-  }
+    setErrorMessage("");
+    setSuccessMessage("");
+  };
 
-  function startEdit(child: Child) {
-    setEditingChildId(child.id);
-    setFirstName(child.firstName);
-    setLastName(child.lastName);
-    setParentName(child.parentName || "");
-    setParentEmail(child.parentEmail || "");
-    setParentPhone(child.parentPhone || "");
-    setIsActive(child.isActive);
-    setError("");
-    setSuccess("");
-  }
-
-  async function saveChild(event: React.FormEvent) {
+  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError("");
-    setSuccess("");
 
-    const childBody = {
-      firstName,
-      lastName,
-      parentName,
-      parentEmail,
-      parentPhone,
-      dailyRate: 0,
-      isActive,
-    };
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setErrorMessage("Please enter the child's first and last name.");
+      return;
+    }
 
     try {
+      setIsSaving(true);
+
       if (editingChildId) {
-        await api.put(`/Children/${editingChildId}`, childBody);
-        setSuccess("Child updated.");
-      } else {
-        await api.post("/Children", {
-          firstName,
-          lastName,
-          parentName,
-          parentEmail,
-          parentPhone,
+        const currentChild = children.find((child) => child.id === editingChildId);
+
+        await api.put(`/Children/${editingChildId}`, {
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          parentName: form.parentName.trim(),
+          parentEmail: form.parentEmail.trim(),
+          parentPhone: form.parentPhone.trim(),
           dailyRate: 0,
+          isActive: currentChild?.isActive ?? true
         });
 
-        setSuccess("Child added.");
+        setSuccessMessage("Child updated successfully.");
+      } else {
+        await api.post("/Children", {
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          parentName: form.parentName.trim(),
+          parentEmail: form.parentEmail.trim(),
+          parentPhone: form.parentPhone.trim(),
+          dailyRate: 0
+        });
+
+        setSuccessMessage("Child added successfully.");
       }
 
       resetForm();
       await loadChildren();
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || "Failed to save child.");
-      } else {
-        setError("Failed to save child.");
-      }
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Could not save child. Please try again.";
+
+      setErrorMessage(typeof message === "string" ? message : "Could not save child. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-  }
+  };
 
-  async function deactivateChild(id: number) {
-    setError("");
-    setSuccess("");
+  const handleEdit = (child: Child) => {
+    setEditingChildId(child.id);
+    setSuccessMessage("");
+    setErrorMessage("");
 
+    setForm({
+      firstName: child.firstName || "",
+      lastName: child.lastName || "",
+      parentName: child.parentName || "",
+      parentEmail: child.parentEmail || "",
+      parentPhone: child.parentPhone || ""
+    });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDeactivate = async (childId: number) => {
     try {
-      await api.delete(`/Children/${id}`);
-      setSuccess("Child deactivated.");
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      await api.delete(`/Children/${childId}`);
+
+      setSuccessMessage("Child deactivated.");
       await loadChildren();
     } catch {
-      setError("Failed to deactivate child.");
+      setErrorMessage("Could not deactivate child. Please try again.");
     }
-  }
+  };
 
-  async function reactivateChild(child: Child) {
-    setError("");
-    setSuccess("");
-
+  const handleReactivate = async (child: Child) => {
     try {
+      setErrorMessage("");
+      setSuccessMessage("");
+
       await api.put(`/Children/${child.id}`, {
         firstName: child.firstName,
         lastName: child.lastName,
@@ -125,199 +172,204 @@ function DashboardPage() {
         parentEmail: child.parentEmail || "",
         parentPhone: child.parentPhone || "",
         dailyRate: 0,
-        isActive: true,
+        isActive: true
       });
 
-      setSuccess("Child reactivated.");
+      setSuccessMessage("Child reactivated.");
       await loadChildren();
     } catch {
-      setError("Failed to reactivate child.");
+      setErrorMessage("Could not reactivate child. Please try again.");
     }
-  }
+  };
 
-  function logout() {
+  const handleLogout = () => {
     localStorage.removeItem("dayhomeflow_token");
     localStorage.removeItem("dayhomeflow_email");
-    window.location.assign("/#/auth");
-  }
 
-  return (
-    <main className="dashboard-page">
-      <header className="dashboard-header">
+    window.location.assign("/#/auth");
+  };
+
+  const renderChildCard = (child: Child, isInactive = false) => {
+    return (
+      <article key={child.id} className={`child-card ${isInactive ? "inactive-card" : ""}`}>
         <div>
-          <p className="eyebrow">DayhomeFlow</p>
-          <h1>Dashboard</h1>
-          <p className="muted">
-            Logged in as {localStorage.getItem("dayhomeflow_email")}
+          <h3>
+            {child.firstName} {child.lastName}
+          </h3>
+
+          <p>
+            <strong>Parent:</strong>{" "}
+            {child.parentName && child.parentName.trim() ? child.parentName : "Not provided"}
+          </p>
+
+          <p>
+            <strong>Email:</strong>{" "}
+            {child.parentEmail && child.parentEmail.trim() ? child.parentEmail : "Not provided"}
+          </p>
+
+          <p>
+            <strong>Phone:</strong>{" "}
+            {child.parentPhone && child.parentPhone.trim() ? child.parentPhone : "Not provided"}
+          </p>
+
+          <p>
+            <strong>Status:</strong> {child.isActive ? "Active" : "Inactive"}
           </p>
         </div>
 
-        <div className="header-actions">
-          <Link className="link-button" to="/attendance">
-            Attendance
-          </Link>
-
-          <Link className="link-button" to="/invoices">
-            Invoices
-          </Link>
-
-          <Link className="link-button" to="/settings">
-            Settings
-          </Link>
-
-          <button className="secondary-button" onClick={logout}>
-            Logout
+        <div className="card-actions">
+          <button type="button" className="secondary-button" onClick={() => handleEdit(child)}>
+            Edit
           </button>
-        </div>
-      </header>
 
-      <section className="grid">
-        <div className="panel">
-          <h2>{editingChildId ? "Edit child" : "Add child"}</h2>
-
-          <form onSubmit={saveChild} className="form">
-            <label>
-              First name
-              <input
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                placeholder="Child first name"
-                required
-              />
-            </label>
-
-            <label>
-              Last name
-              <input
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                placeholder="Child last name"
-                required
-              />
-            </label>
-
-            <label>
-              Parent name
-              <input
-                value={parentName}
-                onChange={(event) => setParentName(event.target.value)}
-                placeholder="Parent or Guardian name"
-              />
-            </label>
-
-            <label>
-              Parent email
-              <input
-                value={parentEmail}
-                onChange={(event) => setParentEmail(event.target.value)}
-                type="email"
-                placeholder="parent@example.com"
-              />
-            </label>
-
-            <label>
-              Parent phone
-              <input
-                value={parentPhone}
-                onChange={(event) => setParentPhone(event.target.value)}
-                placeholder="Parent phone number"
-              />
-            </label>
-
-            {editingChildId && (
-              <label className="checkbox-row">
-                <input
-                  checked={isActive}
-                  onChange={(event) => setIsActive(event.target.checked)}
-                  type="checkbox"
-                />
-                Active child
-              </label>
-            )}
-
-            {error && <p className="error">{error}</p>}
-            {success && <p className="success">{success}</p>}
-
-            <button type="submit">
-              {editingChildId ? "Save changes" : "Add child"}
+          {child.isActive ? (
+            <button type="button" className="danger-button" onClick={() => handleDeactivate(child.id)}>
+              Deactivate
             </button>
-
-            {editingChildId && (
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={resetForm}
-              >
-                Cancel edit
-              </button>
-            )}
-          </form>
-        </div>
-
-        <div className="panel">
-          <h2>Children</h2>
-
-          {children.length === 0 ? (
-            <p className="muted">No children added yet.</p>
           ) : (
-            <div className="child-list">
-              {children.map((child) => (
-                <article key={child.id} className="child-card">
-                  <div className="child-card-header">
-                    <div>
-                      <h3>
-                        {child.firstName} {child.lastName}
-                      </h3>
-
-                      <p>
-                        Status:{" "}
-                        <strong>
-                          {child.isActive ? "Active" : "Inactive"}
-                        </strong>
-                      </p>
-                    </div>
-
-                    <span
-                      className={
-                        child.isActive ? "status-pill active" : "status-pill inactive"
-                      }
-                    >
-                      {child.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </div>
-
-                  <p>Parent: {child.parentName || "N/A"}</p>
-                  <p>Email: {child.parentEmail || "N/A"}</p>
-                  <p>Phone: {child.parentPhone || "N/A"}</p>
-
-                  <div className="card-actions">
-                    <button type="button" onClick={() => startEdit(child)}>
-                      Edit
-                    </button>
-
-                    {child.isActive ? (
-                      <button
-                        type="button"
-                        className="danger-button"
-                        onClick={() => deactivateChild(child.id)}
-                      >
-                        Deactivate
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => reactivateChild(child)}
-                      >
-                        Reactivate
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
+            <button type="button" className="primary-button" onClick={() => handleReactivate(child)}>
+              Reactivate
+            </button>
           )}
         </div>
+      </article>
+    );
+  };
+
+  return (
+    <main className="app-page">
+      <header className="app-header">
+        <div>
+          <Link to="/" className="back-link">
+            ← Home
+          </Link>
+
+          <h1>DayhomeFlow Dashboard</h1>
+          <p>Manage children, parent details, attendance, and invoice exports.</p>
+        </div>
+
+        <nav className="app-nav">
+          <Link to="/attendance">Attendance</Link>
+          <Link to="/invoices">Invoices</Link>
+          <Link to="/settings">Settings</Link>
+
+          <button type="button" className="secondary-button" onClick={handleLogout}>
+            Log out
+          </button>
+        </nav>
+      </header>
+
+      <section className="content-grid">
+        <section className="panel">
+          <h2>{editingChildId ? "Edit child" : "Add child"}</h2>
+
+          <form onSubmit={handleSubmit} className="child-form">
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="firstName">First name</label>
+                <input
+                  id="firstName"
+                  type="text"
+                  value={form.firstName}
+                  onChange={(event) => handleInputChange("firstName", event.target.value)}
+                  placeholder="First name"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="lastName">Last name</label>
+                <input
+                  id="lastName"
+                  type="text"
+                  value={form.lastName}
+                  onChange={(event) => handleInputChange("lastName", event.target.value)}
+                  placeholder="Last name"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="parentName">Parent name</label>
+              <input
+                id="parentName"
+                type="text"
+                value={form.parentName}
+                onChange={(event) => handleInputChange("parentName", event.target.value)}
+                placeholder="Parent name"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="parentEmail">Parent email</label>
+              <input
+                id="parentEmail"
+                type="email"
+                value={form.parentEmail}
+                onChange={(event) => handleInputChange("parentEmail", event.target.value)}
+                placeholder="parent@example.com"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="parentPhone">Parent phone</label>
+              <input
+                id="parentPhone"
+                type="tel"
+                value={form.parentPhone}
+                onChange={(event) => handleInputChange("parentPhone", event.target.value)}
+                placeholder="Parent phone number"
+              />
+            </div>
+
+            {errorMessage && <div className="error-message">{errorMessage}</div>}
+            {successMessage && <div className="success-message">{successMessage}</div>}
+
+            <div className="form-actions">
+              <button type="submit" className="primary-button" disabled={isSaving}>
+                {isSaving ? "Saving..." : editingChildId ? "Update child" : "Add child"}
+              </button>
+
+              {editingChildId && (
+                <button type="button" className="secondary-button" onClick={resetForm}>
+                  Cancel edit
+                </button>
+              )}
+            </div>
+          </form>
+        </section>
+
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>Children</h2>
+              <p>{activeChildren.length} active child{activeChildren.length === 1 ? "" : "ren"}</p>
+            </div>
+
+            <button type="button" className="secondary-button" onClick={loadChildren}>
+              Refresh
+            </button>
+          </div>
+
+          {isLoading ? (
+            <p>Loading children...</p>
+          ) : activeChildren.length === 0 ? (
+            <p>No active children yet. Add your first child to get started.</p>
+          ) : (
+            <div className="child-list">
+              {activeChildren.map((child) => renderChildCard(child))}
+            </div>
+          )}
+
+          {inactiveChildren.length > 0 && (
+            <div className="inactive-section">
+              <h3>Inactive children</h3>
+
+              <div className="child-list">
+                {inactiveChildren.map((child) => renderChildCard(child, true))}
+              </div>
+            </div>
+          )}
+        </section>
       </section>
     </main>
   );
