@@ -1,6 +1,12 @@
 # DayhomeFlow
 
-DayhomeFlow is a full-stack childcare/dayhome management web app that helps dayhome providers manage children, track daily attendance, edit records, preview monthly attendance invoices, and export Excel invoices using a formatted template.
+DayhomeFlow is a production childcare management platform actively used by
+Calgary dayhome providers to manage attendance, child records, provider
+information, and monthly invoicing.
+
+The application includes a JWT-secured ASP.NET Core REST API, a React and
+TypeScript frontend, PostgreSQL persistence, user-isolated data access,
+invoice generation, and Excel exports.
 
 This project was built as a SaaS-style application with authentication, user-owned data, a React dashboard, and a C# ASP.NET Core backend API.
 
