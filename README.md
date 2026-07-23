@@ -1,512 +1,259 @@
-# DayhomeFlow
+DayhomeFlow
 
-DayhomeFlow is a production childcare management platform actively used by
-Calgary dayhome providers to manage attendance, child records, provider
-information, and monthly invoicing.
+A production childcare management platform actively used by Calgary dayhome providers.
 
-The application includes a JWT-secured ASP.NET Core REST API, a React and
-TypeScript frontend, PostgreSQL persistence, user-isolated data access,
-invoice generation, and Excel exports.
+DayhomeFlow helps providers manage child records, track daily attendance, maintain provider information, preview monthly invoices, and export completed attendance data into a formatted Excel invoice template.
 
-This project was built as a SaaS-style application with authentication, user-owned data, a React dashboard, and a C# ASP.NET Core backend API.
+The application combines a JWT-secured ASP.NET Core REST API with a React and TypeScript frontend, PostgreSQL persistence in production, and user-isolated data access so each provider can only access their own records.
 
-## Project Status
+Open the live application
 
-DayhomeFlow is currently a portfolio/demo MVP.
+Why I Built It
 
-It is suitable for:
+Dayhome providers often track attendance and prepare monthly invoices through repetitive spreadsheets and manual record keeping. DayhomeFlow centralizes that workflow in one application and reduces the amount of repeated data entry required each month.
 
-- Demonstrating full-stack development skills
-- Testing with fake/demo data
-- Showing authentication, CRUD, attendance tracking, and Excel export workflows
-- Portfolio and job applications
+The platform was designed around real provider workflows and is now used by Calgary dayhomes for day-to-day attendance and invoicing tasks.
 
-It should not be used with real childcare records until production privacy, hosting, database, backup, and compliance controls are completed.
+Core Features
 
-## Features
+Provider registration and login
 
-- Public landing page
-- User registration and login
-- JWT authentication
-- BCrypt password hashing
-- Rate limiting on login/register endpoints
-- Provider profile/settings page
-- Add, edit, deactivate, and reactivate children
-- Store parent contact information
-- Track daily attendance
-- Edit and delete attendance records
-- Record drop-off and pick-up times
-- Mark children present or absent
-- Generate monthly invoice previews
-- Display Excel-style invoice grids in the frontend
-- Export invoices to Excel using a formatted template
-- Fill provider name, provider phone number, month, and year in the invoice
-- Include parent names in the export
-- Deduplicate parent names when multiple children share the same parent
-- Sanitize Excel text values to reduce formula injection risk
-- User-owned data separation so each provider only sees their own records
+JWT-based authentication and protected routes
 
-## Tech Stack
+Provider profile and contact-information management
 
-### Backend
+Add, edit, deactivate, and reactivate child records
 
-- C#
-- ASP.NET Core Web API
-- Entity Framework Core
-- SQLite for local development
-- JWT authentication
-- BCrypt password hashing
-- ASP.NET Core rate limiting
-- Swagger/OpenAPI
-- ClosedXML for Excel export
+Store parent and guardian contact information
 
-### Frontend
+Record daily attendance, absences, drop-off times, and pick-up times
 
-- React
-- TypeScript
-- Vite
-- Axios
-- React Router
-- CSS
+Edit and remove attendance records
 
-## Project Structure
+Preview monthly attendance in an Excel-style grid
 
-```text
-Dayhome Flow/
+Calculate daily and monthly attendance hours
+
+Export monthly invoices using a formatted Excel template
+
+Insert provider, child, parent, month, year, and attendance information into exports
+
+Isolate records by authenticated provider account
+
+Architecture
+
+flowchart LR
+    U[Dayhome Provider] --> F[React + TypeScript Frontend]
+    F -->|HTTPS / JSON| A[ASP.NET Core REST API]
+    A -->|Entity Framework Core| P[(PostgreSQL)]
+    A --> J[JWT Authentication]
+    A --> E[ClosedXML Excel Export]
+    F -. deployed on .-> V[Vercel]
+    A -. containerized and deployed on .-> R[Render]
+
+Technology Stack
+
+Backend
+
+C# and ASP.NET Core Web API
+
+Entity Framework Core
+
+PostgreSQL in production
+
+SQLite for local development
+
+JWT authentication
+
+BCrypt password hashing
+
+ASP.NET Core rate limiting
+
+Swagger / OpenAPI
+
+ClosedXML for Excel generation
+
+Frontend
+
+React
+
+TypeScript
+
+Vite
+
+Axios
+
+React Router
+
+CSS
+
+Deployment
+
+Docker
+
+Render
+
+Vercel
+
+Environment-based configuration
+
+Engineering Highlights
+
+User-isolated data access
+
+Authenticated requests are associated with the provider account identified by the JWT. Child, attendance, provider, and invoice queries are filtered by that account so one provider cannot retrieve another provider's records.
+
+Flexible database configuration
+
+The API supports SQLite for local development and PostgreSQL for production. The database provider and connection string are supplied through configuration rather than being hard-coded.
+
+Template-based Excel exports
+
+Monthly invoices are generated from a formatted Excel template instead of a blank workbook. The API fills provider information, parent names, child names, attendance values, and monthly totals while preserving the layout expected by providers.
+
+Text values are sanitized before export to reduce the risk of spreadsheet formula injection.
+
+Production deployment
+
+The backend is built and published through a multi-stage Docker image. The frontend and API use environment-specific URLs and CORS configuration for local and deployed environments.
+
+Security Controls Implemented
+
+BCrypt password hashing
+
+JWT authentication for protected endpoints
+
+Provider-owned record filtering
+
+Rate limiting on registration and login endpoints
+
+Environment-based secret management
+
+Restricted CORS configuration
+
+Excel text sanitization
+
+No public administrative or bulk-delete endpoint
+
+DayhomeFlow does not claim certification under a specific privacy or security framework. Additional security review, monitoring, backups, and operational controls remain ongoing priorities as the platform develops.
+
+Project Structure
+
+Dayhome-Flow/
 ├── DayhomeFlowApi/
 │   ├── Controllers/
-│   │   ├── AuthController.cs
-│   │   ├── AttendanceController.cs
-│   │   ├── ChildrenController.cs
-│   │   ├── InvoicesController.cs
-│   │   └── ProviderProfileController.cs
 │   ├── Data/
-│   │   └── DayhomeFlowContext.cs
 │   ├── Dtos/
+│   ├── Migrations/
 │   ├── Models/
 │   ├── Templates/
 │   │   └── EducatorInvoiceTemplate.xlsx
 │   ├── Program.cs
-│   └── appsettings.json
-│
+│   └── DayhomeFlowApi.csproj
 ├── dayhomeflow-client/
 │   ├── src/
 │   │   ├── api/
-│   │   │   └── api.ts
 │   │   ├── pages/
-│   │   │   ├── AuthPage.tsx
-│   │   │   ├── AttendancePage.tsx
-│   │   │   ├── DashboardPage.tsx
-│   │   │   ├── InvoicePage.tsx
-│   │   │   ├── LandingPage.tsx
-│   │   │   └── ProviderSettingsPage.tsx
 │   │   ├── types/
-│   │   │   └── index.ts
 │   │   ├── App.tsx
 │   │   └── App.css
 │   └── package.json
-│
-├── README.md
-└── .gitignore
-```
+├── Dockerfile
+└── README.md
 
-## Backend Setup
+Local Development
 
-Go into the backend folder:
+Prerequisites
 
-```bash
+.NET SDK
+
+Node.js and npm
+
+SQLite, or access to PostgreSQL
+
+Entity Framework Core CLI tools
+
+1. Clone the repository
+
+git clone https://github.com/MusaJawad/Dayhome-Flow.git
+cd Dayhome-Flow
+
+2. Configure the backend
+
 cd DayhomeFlowApi
-```
-
-Restore dependencies:
-
-```bash
 dotnet restore
-```
-
-Apply database migrations:
-
-```bash
-dotnet ef database update
-```
-
-Run the API:
-
-```bash
-dotnet run
-```
-
-The API runs locally at something like:
-
-```text
-http://localhost:5192
-```
-
-Swagger is available at:
-
-```text
-http://localhost:5192/swagger
-```
-
-## Frontend Setup
-
-Go into the frontend folder:
-
-```bash
-cd dayhomeflow-client
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Run the frontend:
-
-```bash
-npm run dev
-```
-
-The frontend runs locally at:
-
-```text
-http://localhost:5173
-```
-
-## Environment Variables and Secrets
-
-### Backend
-
-The JWT secret should not be committed to GitHub.
-
-For local development, use .NET user secrets:
-
-```bash
-cd DayhomeFlowApi
 dotnet user-secrets init
-```
 
-Generate and save a JWT key in PowerShell:
+Set a development JWT key:
 
-```powershell
-$bytes = New-Object byte[] 64
-$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-$rng.GetBytes($bytes)
-$jwtKey = [Convert]::ToBase64String($bytes)
-dotnet user-secrets set "Jwt:Key" $jwtKey
-```
+dotnet user-secrets set "Jwt:Key" "replace-with-a-long-random-development-key"
 
-Verify it was saved:
+Example development configuration:
 
-```bash
-dotnet user-secrets list
-```
-
-Expected result:
-
-```text
-Jwt:Key = some_long_random_value
-```
-
-The `appsettings.json` file should not contain the real production JWT key.
-
-Example local `Jwt` section:
-
-```json
-"Jwt": {
-  "Key": "",
-  "Issuer": "DayhomeFlowApi",
-  "Audience": "DayhomeFlowUsers"
+{
+  "DatabaseProvider": "Sqlite",
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=dayhomeflow.db"
+  },
+  "Jwt": {
+    "Issuer": "DayhomeFlowApi",
+    "Audience": "DayhomeFlowUsers"
+  },
+  "AllowedOrigins": [
+    "http://localhost:5173"
+  ]
 }
-```
 
-For deployment, the JWT key should be stored in the hosting platform’s environment variables.
+Apply migrations and run the API:
 
-### Frontend
-
-Before deployment, the frontend API URL should be moved into an environment variable.
-
-Local example:
-
-```text
-VITE_API_URL=http://localhost:5192/api
-```
-
-Production example:
-
-```text
-VITE_API_URL=https://your-backend-url.com/api
-```
-
-## Main API Endpoints
-
-### Auth
-
-```text
-POST /api/Auth/register
-POST /api/Auth/login
-```
-
-### Provider Profile
-
-```text
-GET /api/ProviderProfile/me
-PUT /api/ProviderProfile/me
-```
-
-### Children
-
-```text
-GET    /api/Children
-GET    /api/Children/active
-GET    /api/Children/{id}
-POST   /api/Children
-PUT    /api/Children/{id}
-DELETE /api/Children/{id}
-```
-
-The delete endpoint currently deactivates a child instead of permanently deleting the record.
-
-### Attendance
-
-```text
-GET    /api/Attendance
-GET    /api/Attendance/{id}
-GET    /api/Attendance/child/{childId}
-GET    /api/Attendance/monthly?year=2026&month=7
-POST   /api/Attendance
-PUT    /api/Attendance/{id}
-DELETE /api/Attendance/{id}
-```
-
-### Invoices
-
-```text
-GET /api/Invoices/preview?year=2026&month=7
-GET /api/Invoices/export/excel?year=2026&month=7
-```
-
-## Invoice Export
-
-The Excel export uses a formatted invoice template located at:
-
-```text
-DayhomeFlowApi/Templates/EducatorInvoiceTemplate.xlsx
-```
-
-The backend fills the template with:
-
-- Provider name
-- Provider phone number
-- Month
-- Year
-- Child names
-- Parent names
-- Daily attendance values
-- Total monthly hours
-
-The export intentionally does not calculate or fill:
-
-- Contract fee
-- Agency fees
-- Liability insurance
-- Storypark deductions
-- Training courses
-- Other deductions
-- Additions
-- Total paid
-
-Those values are handled by the agency, not the dayhome provider.
-
-## Attendance Values
-
-The invoice preview and Excel export use these values:
-
-```text
-x = no attendance record
-a = absent
-0 = present without drop-off/pick-up times
-number = calculated hours for that day
-```
-
-Example:
-
-```text
-8
-8.5
-9.25
-a
-x
-```
-
-## Authentication Flow
-
-1. A provider registers an account.
-2. The backend hashes the password using BCrypt.
-3. On login, the backend returns a JWT token.
-4. The frontend stores the token locally.
-5. Protected API requests send the token using the Authorization header.
-6. The backend uses the token to identify the provider.
-7. All child, attendance, provider, and invoice data is filtered by the logged-in user’s ID.
-
-## Security Features Implemented
-
-- Passwords are hashed using BCrypt.
-- Protected routes require JWT authentication.
-- User-owned data filtering prevents providers from accessing other users’ data.
-- Login and register endpoints are rate limited.
-- JWT secret is stored using user-secrets locally instead of being committed to GitHub.
-- Excel export sanitizes provider, parent, and child text values to reduce formula injection risk.
-- SQLite database files are ignored by Git.
-- No public admin or delete-all endpoint exists.
-
-## Security Limitations
-
-This is still a portfolio/demo MVP.
-
-Before storing real childcare data, the following should be completed:
-
-- Deploy over HTTPS only
-- Use a production database such as PostgreSQL
-- Store production secrets in hosting environment variables
-- Lock CORS to the deployed frontend URL
-- Add better logging and monitoring
-- Add email verification or invite-only registration
-- Add password reset
-- Add account deletion/data deletion workflow
-- Add a privacy policy
-- Add database backups
-- Consider using secure httpOnly cookies instead of localStorage JWT storage
-- Add stricter validation for production data
-
-## Privacy Note
-
-DayhomeFlow is designed around sensitive childcare workflows. During development and portfolio demos, only fake/demo data should be used.
-
-Example demo data:
-
-```text
-Child: Ayaan Test
-Parent: Parent Example
-Email: parent@example.com
-Phone: 403-555-1234
-```
-
-Do not enter real child or parent information until production privacy and security controls are complete.
-
-## Current Completed Features
-
-- Public landing page
-- Register/login
-- JWT authentication
-- Rate limiting for auth endpoints
-- Provider settings page
-- Children add/edit/deactivate/reactivate
-- Attendance add/edit/delete
-- Monthly invoice preview
-- Excel invoice export
-- Excel text sanitization
-- Parent name deduplication
-- Provider name and phone number on exported invoice
-- User-owned data separation
-
-## Planned Improvements
-
-- Move frontend API URL to `.env`
-- Add automatic logout on expired token or 401 response
-- Switch local SQLite database to PostgreSQL for deployment
-- Add production CORS configuration
-- Add password reset
-- Add email verification
-- Add account deletion
-- Add better dashboard stats
-- Add loading states and empty states
-- Add screenshots to README
-- Add deployment instructions
-- Deploy backend
-- Deploy frontend
-- Add public demo link
-
-## Deployment Plan
-
-Recommended deployment order:
-
-1. Move frontend API URL to environment variables.
-2. Add automatic logout on `401 Unauthorized`.
-3. Prepare backend production settings.
-4. Switch from SQLite to PostgreSQL.
-5. Deploy backend.
-6. Test online Swagger/API endpoints.
-7. Deploy frontend.
-8. Set `VITE_API_URL` to the deployed backend API URL.
-9. Test full deployed flow with fake/demo data.
-
-Recommended hosting:
-
-```text
-Frontend: Vercel
-Backend: Render, Railway, Azure, or similar
-Database: PostgreSQL
-```
-
-## Local Development Checklist
-
-Backend:
-
-```bash
-cd DayhomeFlowApi
-dotnet restore
 dotnet ef database update
 dotnet run
-```
 
-Frontend:
+Swagger is available from the local API's /swagger route while development documentation is enabled.
 
-```bash
+3. Configure the frontend
+
+Open another terminal:
+
 cd dayhomeflow-client
 npm install
+
+Create a local .env file:
+
+VITE_API_URL=http://localhost:5192/api
+
+Use the port printed by the API if it differs from 5192, then start the frontend:
+
 npm run dev
-```
 
-Then open:
+Main API Areas
 
-```text
-http://localhost:5173
-```
+/api/Auth
+/api/ProviderProfile
+/api/Children
+/api/Attendance
+/api/Invoices
 
-## Git Notes
+The API supports authentication, provider profile management, child-record CRUD operations, attendance tracking, monthly invoice previews, and Excel exports.
 
-The project should be committed from the parent folder:
+Current Roadmap
 
-```bash
-cd "C:\Users\red\Desktop\Dayhome Flow"
-git add .
-git commit -m "Your commit message"
-git push
-```
+Password-reset workflow
 
-Do not commit:
+Email verification or invite-based registration
 
-```text
-node_modules
-bin
-obj
-*.db
-*.db-shm
-*.db-wal
-real secrets
-real childcare data
-```
+Account and data-deletion workflow
 
-The Excel template should be committed:
+Expanded automated API and frontend tests
 
-```text
-DayhomeFlowApi/Templates/EducatorInvoiceTemplate.xlsx
-```
+Improved operational logging and monitoring
 
-## Author
+Automated database-backup verification
 
-Musa Jawad  
-Software Engineering Graduate  
-Full-Stack / Backend Developer
+Audit-history features for sensitive record changes
+
+Additional dashboard reporting
+
+Author
+
+Musa JawadBackend Software EngineerLinkedIn · Portfolio · GitHub
